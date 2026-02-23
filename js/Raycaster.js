@@ -1,10 +1,10 @@
 /* ************************************************************************************************************ */
 
-var canvas;
-var canvas_contexto;
+let canvas;
+let canvas_contexto;
 
-var mapa;
-var nivel;
+let mapa;
+let nivel;
 
 const canvas_ancho = 1600;
 const canvas_alto = 800;
@@ -16,7 +16,7 @@ const COLOR_GRIS = "#666666";
 
 /* ************************************************************************************************************ */
 
-var mapa_test = [
+let mapa_test = [
 	[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
 	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -58,6 +58,16 @@ function buclePrincipal (){
 /* ************************************************************************************************************ */
 
 class Nivel {
+	#canvas;
+	#canvas_contexto;
+	#mapa;
+	#mapa_alto;
+	#mapa_ancho;
+	#canvas_alto;
+	#canvas_ancho;
+	#baldosa_size_alto;
+	#baldosa_size_ancho;
+	
 	constructor ( p_canvas, p_canvas_contexto, p_mapa_nivel ) {
 		this.canvas = p_canvas;
 		this.canvas_contexto = p_canvas_contexto;
@@ -78,10 +88,10 @@ class Nivel {
 	/* ******************************************************************************************************** */
 	
 	dibujar () {
-		var color;
+		let color;
 		
-		for ( var y = 0; y < this.mapa_alto; y++) {
-			for ( var x = 0; x < this.mapa_ancho; x++) {
+		for ( let y = 0; y < this.mapa_alto; y++) {
+			for ( let x = 0; x < this.mapa_ancho; x++) {
 				if ( this.mapa[y][x] == OBSTACULO ) {
 					color = COLOR_NEGRO;
 				} else {
