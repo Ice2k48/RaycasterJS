@@ -1,3 +1,19 @@
+import Nivel from "./Nivel.js";
+import Jugador from "./Jugador.js";
+import InputManager from "./InputManager.js";
+
+/* ************************************************************************************************************ */
+
+import { TAM_CANVAS, JUGADOR_PARAMS, FPS, CASILLAS, COLORES } from "./Constantes.js";
+import { MAPAS } from "./Mapas.js";
+
+/* ************************************************************************************************************ */
+
+let ultimo_tiempo = 0;
+let acumulador_tiempo = 0;
+
+const DELTATIME = 1 / FPS;
+
 /* ************************************************************************************************************ */
 
 let canvas;
@@ -5,29 +21,8 @@ let canvas_contexto;
 
 let mapa;
 let nivel;
-
-const canvas_ancho = 1600;
-const canvas_alto = 800;
-const FPS = 60;
-const LIBRE = 0;
-const OBSTACULO = 1;
-const COLOR_NEGRO = "#000000";
-const COLOR_GRIS = "#666666";
-
-/* ************************************************************************************************************ */
-
-let mapa_test = [
-	[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-	[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-	[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
+let jugador;
+let input_manager;
 
 /* ************************************************************************************************************ */
 
@@ -37,79 +32,81 @@ function inicializar() {
 	canvas = document.getElementById ( "canvas" );
 	canvas_contexto = canvas.getContext ("2d");
 	
-	canvas.width = canvas_ancho;
-	canvas.height = canvas_alto;
+	canvas.width = TAM_CANVAS.ancho;
+	canvas.height = TAM_CANVAS.alto;
 	
-	nivel = new Nivel ( canvas, canvas_contexto, mapa_test );
+	let mapa_inicial = MAPAS.mapa_test;
+	let jugador_pos_inicial_x = 8;
+	let jugador_pos_inicial_y = 2;
+	let angulo_inicial = JUGADOR_PARAMS.angulo;
 	
-	setInterval ( function () { buclePrincipal(); }, 1000/FPS );
+	nivel = new Nivel ( canvas_contexto, MAPAS.mapa_test );
+	jugador = new Jugador ( canvas_contexto, mapa_inicial, jugador_pos_inicial_x, jugador_pos_inicial_y, angulo_inicial );
+	input_manager = new InputManager (  );
+	
+	ultimo_tiempo = performance.now() / 1000; //tiempo en alta precision independiente de la hora, pasado a segundos
+	requestAnimationFrame ( buclePrincipal ); //pasa como parametro p_tiempo automaticamente
 }
 
 /* ************************************************************************************************************ */
 
-function buclePrincipal (){
+function buclePrincipal ( p_tiempo ){
 	console.log ( "fotograma" );
 	
-	borrarCanvas ();
-	nivel.dibujar();
+	/* ******************************************************************************************************** */
+	//Control del tiempo de actualizacion con delta time
+	const tiempo_actual = p_tiempo /1000; // a segundos para que sea consistente en unidades con FPS
+	let delta = tiempo_actual - ultimo_tiempo;
+	ultimo_tiempo = tiempo_actual;
 	
-}
-
-/* ************************************************************************************************************ */
-
-class Nivel {
-	#canvas;
-	#canvas_contexto;
-	#mapa;
-	#mapa_alto;
-	#mapa_ancho;
-	#canvas_alto;
-	#canvas_ancho;
-	#baldosa_size_alto;
-	#baldosa_size_ancho;
+	// Evitar saltos enormes si la pestaña estuvo parada
+	if ( delta > 0.25 ) {
+		delta = 0.25;
+	}
 	
-	constructor ( p_canvas, p_canvas_contexto, p_mapa_nivel ) {
-		this.canvas = p_canvas;
-		this.canvas_contexto = p_canvas_contexto;
-		this.mapa = p_mapa_nivel;
-		
-		this.mapa_alto = this.mapa.length;
-		this.mapa_ancho = this.mapa[0].length;
-		
-		this.canvas_alto = this.canvas.height;
-		this.canvas_ancho = this.canvas.width;
-		
-		//Dimensiones de las baldosas
-		this.baldosa_size_alto = parseInt ( this.canvas_alto / this.mapa_alto );
-		this.baldosa_size_ancho = parseInt ( this.canvas_ancho / this.mapa_ancho );
-		
+	acumulador_tiempo += delta;
+
+	/* ******************************************************************************************************** */
+	// Update con FPS fijo
+	while ( acumulador_tiempo >= DELTATIME ) {
+		update ( DELTATIME );
+		acumulador_tiempo -= DELTATIME;
 	}
 	
 	/* ******************************************************************************************************** */
+	// Dibujar a todo lo que pueda requestAnimationFrame
+	borrarCanvas ();
+	dibujar ();
 	
-	dibujar () {
-		let color;
-		
-		for ( let y = 0; y < this.mapa_alto; y++) {
-			for ( let x = 0; x < this.mapa_ancho; x++) {
-				if ( this.mapa[y][x] == OBSTACULO ) {
-					color = COLOR_NEGRO;
-				} else {
-					color = COLOR_GRIS;
-				}
-				
-				this.canvas_contexto.fillStyle = color;
-				this.canvas_contexto.fillRect ( x * this.baldosa_size_ancho, y * this.baldosa_size_alto, this.baldosa_size_ancho, this.baldosa_size_alto );
-			}
-		}
-	}
+	requestAnimationFrame ( buclePrincipal );
+}
+
+/* ************************************************************************************************************ */
+
+function update ( p_delta_time ) {
+	// La ? indica que ejecute el metodo actualizar si existe, si no, no da error
+	
+	let velocidad_jugador = JUGADOR_PARAMS.velocidad; //temporal, luego estará basado en los inputs
+	
+	jugador.actualizar ( p_delta_time, velocidad_jugador, 45, input_manager );
+	nivel.actualizar?.( p_delta_time );
+}
+
+/* ************************************************************************************************************ */
+
+function dibujar () {
+	nivel.dibujarMapa();
+	jugador.dibujarJugador();
 }
 
 /* ************************************************************************************************************ */
 
 function borrarCanvas () {
-	canvas.width = canvas_ancho;
-	canvas.height = canvas_alto;
+	canvas_contexto.clearRect(0, 0, canvas.width, canvas.height);
 }
+
+/* ************************************************************************************************************ */
+
+window.addEventListener("load", inicializar);
 
 /* ************************************************************************************************************ */
