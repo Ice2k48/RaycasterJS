@@ -38,11 +38,30 @@ export default class Baldosa {
 	estoyDentro ( p_pos_x, p_pos_y ) {
 		let dentro = false;
 		
-		if ( this.#pos_x0 <= p_pos_x & this.#pos_x1 >= p_pos_x & this.#pos_y0 <= p_pos_y & this.#pos_y1 >= p_pos_y  ) {
+		if ( this.#pos_x0 <= p_pos_x && this.#pos_x1 >= p_pos_x && this.#pos_y0 <= p_pos_y && this.#pos_y1 >= p_pos_y  ) {
 			dentro = true;
 		}
 		
 		return dentro;
+	}
+	
+	/* ******************************************************************************************************** */
+	
+	obtenerRectangulo () {
+		const rectangulo = {
+			x: null,
+			y: null,
+			ancho: null,
+			alto: null
+		};
+	
+		rectangulo.x = this.#pos_x0;
+		rectangulo.y = this.#pos_y0;
+	
+		rectangulo.ancho = this.#pos_x1 - this.#pos_x0;
+		rectangulo.alto  = this.#pos_y1 - this.#pos_y0;
+	
+		return rectangulo;
 	}
 	
 	/* ******************************************************************************************************** */

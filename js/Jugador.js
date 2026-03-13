@@ -33,8 +33,8 @@ export default class Jugador {
 		//console.log(this.#posicion_x, this.#posicion_y);
 		
 		const radio = this.#tamanio;
-		console.log("radio: " + radio);
-		console.log("this.#tamanio: " + this.#tamanio);
+		//console.log("radio: " + radio);
+		//console.log("this.#tamanio: " + this.#tamanio);
 		this.#canvas_contexto.beginPath();
 		this.#canvas_contexto.arc(this.#posicion_x, this.#posicion_y, radio, 0, Math.PI * 2);
 		this.#canvas_contexto.fillStyle = COLORES.azul;

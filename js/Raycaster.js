@@ -1,5 +1,8 @@
 import Nivel from "./Nivel.js";
 import Jugador from "./Jugador.js";
+import Camara from "./Camara.js";
+import Render from "./Render.js";
+import Baldosa from "./Baldosa.js";
 import InputManager from "./InputManager.js";
 import { leerArchivo } from "./Utils.js";
 
@@ -37,14 +40,25 @@ let canvas_tam_alto;
 
 /* ************************************************************************************************************ */
 
-let matriz_baldosas;
-let matriz_tam_baldosas;
+let mundo; //es una matriz de baldosas, de las misma dimensiones que el mapa
+let tam_baldosas;
+
+/* ************************************************************************************************************ */
+
+let camara; 
+let render;
 
 /* ************************************************************************************************************ */
 
 let mapa;
 let nivel;
+
+/* ************************************************************************************************************ */
 let jugador;
+let jugador_pos_inicial_x;
+let jugador_pos_inicial_y;
+/* ************************************************************************************************************ */
+
 let input_manager;
 
 /* ************************************************************************************************************ */
@@ -70,7 +84,7 @@ function inicializar() {
 	
 	tam_baldosa_input = document.getElementById ( "tam_baldosa_input" );
 	tam_baldosa_input.value = TAM_CANVAS.balsosa;
-	matriz_tam_baldosas = tam_baldosa_input.value;
+	tam_baldosas = tam_baldosa_input.value;
 	
 	/* ******************************************************************************************************** */
 	
@@ -92,24 +106,26 @@ function iniciar() {
 	canvas = document.getElementById ( "canvas" );
 	canvas_contexto = canvas.getContext ("2d");
 	
-	canvas.width = tam_canvas_input_ancho.value;
-	canvas.height = tam_canvas_input_alto.value;
+	canvas.width = Number ( tam_canvas_input_ancho.value );
+	canvas.height = Number ( tam_canvas_input_alto.value );
 	
 	/* Mapa *************************************************************************************************** */
 	
 	cargarMapa();
+	camara = new Camara ( 0, 0, canvas.width, canvas.height );
+	render = new Render ( canvas_contexto );
 	
+	/*
 	let jugador_pos_inicial_x = 800;
 	let jugador_pos_inicial_y = 200;
 	let angulo_inicial = JUGADOR_PARAMS.angulo;
 	let tamanio_jugador_inicial = JUGADOR_PARAMS.tamanio_jugador_inicial; //para test, luego en relacion a baldosa
 	
-	//matriz_baldosas = calcularRelacionBaldosas ( canvas.width, canvas.height, mapa_inicial[0].length, mapa_inicial.length  );
-	
 	nivel = new Nivel ( canvas_contexto, mapa );
 	jugador = new Jugador ( canvas_contexto, mapa, jugador_pos_inicial_x, jugador_pos_inicial_y, angulo_inicial, tamanio_jugador_inicial );
-	input_manager = new InputManager (  );
+	*/
 	
+	input_manager = new InputManager (  );
 	ultimo_tiempo = performance.now() / 1000; //tiempo en alta precision independiente de la hora, pasado a segundos
 	requestAnimationFrame ( buclePrincipal ); //pasa como parametro p_tiempo automaticamente
 }
@@ -117,7 +133,7 @@ function iniciar() {
 /* ************************************************************************************************************ */
 
 function buclePrincipal ( p_tiempo ){
-	console.log ( "fotograma" );
+	//console.log ( "fotograma" );
 	
 	/* ******************************************************************************************************** */
 	//Control del tiempo de actualizacion con delta time
@@ -154,15 +170,15 @@ function update ( p_delta_time ) {
 	
 	let velocidad_jugador = JUGADOR_PARAMS.velocidad; //temporal, luego estará basado en los inputs
 	
-	jugador.actualizar ( p_delta_time, velocidad_jugador, 45, input_manager );
-	nivel.actualizar?.( p_delta_time );
+	//jugador.actualizar ( p_delta_time, velocidad_jugador, 45, input_manager );
+	//nivel.actualizar?.( p_delta_time );
 }
 
 /* ************************************************************************************************************ */
 
 function dibujar () {
-	nivel.dibujarMapa();
-	jugador.dibujarJugador();
+	render.dibujarMapa ( mundo, camara );
+	render.dibujarJugador ( jugador, camara );
 }
 
 /* ************************************************************************************************************ */
@@ -175,12 +191,21 @@ function borrarCanvas () {
 //Cuando se pulsa el boton tam_canvas_boton se establece el tamaño del canvas
 document.getElementById("tam_canvas_boton").addEventListener("click", establecerTamCanvas);
 function establecerTamCanvas () {
+	canvas_tam_ancho = tam_canvas_input_ancho.value;
+	canvas_tam_alto = tam_canvas_input_alto.value;
+	
+	//Desde cero o conservar el estado, empezaremos desde cero
+	cargarMapa();
 }
 
 /* ************************************************************************************************************ */
 //Cuando se pulsa el boton tam_baldosa_boton se establece el tamaño de la baldosa
 document.getElementById("tam_baldosa_boton").addEventListener("click", establecerTamBaldosa);
 function establecerTamBaldosa() {
+	tam_baldosas = Number ( tam_baldosa_input.value );
+	
+	//Desde cero o conservar el estado, empezaremos desde cero
+	cargarMapa();
 }
 
 /* ************************************************************************************************************ */
@@ -193,9 +218,7 @@ function cargarMapa() {
 		mapa = MAPAS[select_mapa_desplegable.value];
 	}
 	
-	// Buscar posicion de jugador
-	// cargar el canvas
-	//procesarMapa ( mapa, canvas_contexto );
+	procesarMapa ( mapa, canvas_contexto );
 }
 
 /* ************************************************************************************************************ */
@@ -215,6 +238,84 @@ async function cargarArchivoMapa() {
 	for (const nombreMapa of Object.keys(archivo_json)) {
 		select_mapa_desplegable.add(new Option(nombreMapa, nombreMapa));
 	}
+}
+
+/* ************************************************************************************************************ */
+
+function procesarMapa ( p_mapa, p_canvas_contexto ) {
+	//Tenemos que crear una matriz del mismo tamaño de el mapa
+	// pero de objetos baldosas, será nuestro mundo del juego
+	mundo = crearMundo ( p_mapa, tam_baldosas );
+	
+	// Buscar posicion de jugador
+	let posicion_inicial_jugador = posicionJugador ( p_mapa, tam_baldosas );
+	jugador_pos_inicial_x = posicion_inicial_jugador.x;
+	jugador_pos_inicial_y = posicion_inicial_jugador.y;
+	
+}
+
+/* ************************************************************************************************************ */
+
+function crearMundo ( p_mapa, p_tam_baldosas ) {
+	const filas = p_mapa.length;
+	const columnas = p_mapa[0].length;
+	
+	const aux_mundo = [];
+	
+	for ( let y = 0; y < filas; y++ ) {
+		aux_mundo[y] = [];
+		
+		for ( let x = 0; x < columnas; x++ ) {
+            let tipo = p_mapa[y][x];
+            
+            if ( tipo != CASILLAS.obstaculo ) {
+				tipo = CASILLAS.libre;
+			}
+            
+            const pos_x0 = x * p_tam_baldosas; //Ejemplo: si es x=1 y el tamaño es 10, pos_x0 es 10
+            const pos_x1 = pos_x0 + tam_baldosas; // Ejemplo: si pos_x0 es 10 y el tamaño es 10 pos_x1 es 20
+            
+            const pos_y0 = y * tam_baldosas;
+            const pos_y1 = pos_y0 + tam_baldosas;
+            
+            let baldosa = new Baldosa ( pos_x0, pos_x1, pos_y0, pos_y1, tipo );
+            aux_mundo[y][x] = baldosa;
+		}
+	}
+	
+	return aux_mundo;
+}
+
+/* ************************************************************************************************************ */
+
+function posicionJugador ( p_mapa, p_tam_baldosas ) {
+	const filas = p_mapa.length;
+	const columnas = p_mapa[0].length;
+
+	const posicion = { 
+		x: null, 
+		y: null
+    };
+    
+    let encontrado = false;
+    
+	for ( let y = 0; y < filas && !encontrado; y++ ) {
+		for ( let x = 0; x < columnas; x++ ) {
+			if ( p_mapa[y][x] === 2 ) {
+				//Calcula la posicion de inicio de la baldosa y la suma la mitad del tamaño para
+				// que quede en el centro
+				posicion.x = x * p_tam_baldosas + ( p_tam_baldosas / 2 );
+				posicion.y = y * p_tam_baldosas + ( p_tam_baldosas / 2 );
+	
+				encontrado = true;
+				
+				break;
+	
+			}
+		}
+	}
+	
+	return posicion;
 }
 
 /* ************************************************************************************************************ */
