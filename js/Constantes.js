@@ -2,7 +2,8 @@
 //Tamaño canvas
 export const TAM_CANVAS = {
 	ancho: 1600,
-	alto: 800
+	alto: 800,
+	balsosa: 10
 };
 
 /* ************************************************************************************************************ */
@@ -12,7 +13,8 @@ export const JUGADOR_PARAMS = {
 	radio: 20,
 	tam_direccion: 64,
 	angulo: 0,
-	velocidad_angular: 180 // grados/seg
+	velocidad_angular: 180, // grados/seg
+	tamanio_jugador_inicial: 20 //es el radio si dibujamos un circulo
 };
 
 /* ************************************************************************************************************ */
@@ -23,7 +25,8 @@ export const FPS = 60;
 //Tipo de casillas
 export const CASILLAS = {
 	libre: 0,
-	obstaculo: 1
+	obstaculo: 1,
+	jugador: 2
 };
 
 /* ************************************************************************************************************ */

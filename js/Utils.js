@@ -15,3 +15,10 @@ export function radianesAGrados ( p_radianes ) {
 }
 
 /* ************************************************************************************************************ */
+
+export async function leerArchivo ( archivo ) {
+    const contenido = await archivo.text();
+    return contenido;
+}
+
+/* ************************************************************************************************************ */

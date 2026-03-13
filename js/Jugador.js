@@ -11,8 +11,9 @@ export default class Jugador {
 	#posicion_y
 	#mapa_nivel
 	#angulo //hacia donde esta mirando: 0º -> derecha; 90º -> abajo; 180º -> izquierda; 270º -> arriba
+	#tamanio //relacion con el tamaño de la baldosa Ej: tamanio jugador un 90% de una baldosa
 	
-	constructor ( p_canvas_contexto, p_mapa_nivel, p_posicion_x, p_posicion_y, p_angulo ) {
+	constructor ( p_canvas_contexto, p_mapa_nivel, p_posicion_x, p_posicion_y, p_angulo, p_tamanio ) {
 		this.#canvas_contexto = p_canvas_contexto;
 		
 		this.#mapa_nivel = p_mapa_nivel;
@@ -22,13 +23,18 @@ export default class Jugador {
 		
 		this.#angulo = gradosARadianes ( p_angulo );
 		
+		this.#tamanio = p_tamanio;
+		
 	}
 	
 	/* ******************************************************************************************************** */
 	
 	dibujarJugador () {
-		const radio = JUGADOR_PARAMS.radio;
+		//console.log(this.#posicion_x, this.#posicion_y);
 		
+		const radio = this.#tamanio;
+		console.log("radio: " + radio);
+		console.log("this.#tamanio: " + this.#tamanio);
 		this.#canvas_contexto.beginPath();
 		this.#canvas_contexto.arc(this.#posicion_x, this.#posicion_y, radio, 0, Math.PI * 2);
 		this.#canvas_contexto.fillStyle = COLORES.azul;
@@ -37,7 +43,7 @@ export default class Jugador {
 		//dibujar direccion
 		this.#canvas_contexto.beginPath ();
 		this.#canvas_contexto.moveTo ( this.#posicion_x, this.#posicion_y);
-		this.#canvas_contexto.lineTo ( this.#posicion_x + Math.cos ( this.#angulo ) * JUGADOR_PARAMS.tam_direccion, this.#posicion_y + Math.sin ( this.#angulo ) * JUGADOR_PARAMS.tam_direccion );
+		this.#canvas_contexto.lineTo ( this.#posicion_x + Math.cos ( this.#angulo ) * (radio * 3), this.#posicion_y + Math.sin ( this.#angulo ) * (radio * 3) );
 		this.#canvas_contexto.strokeStyle = COLORES.blanco;   // o el color que quieras
 		this.#canvas_contexto.stroke();
 		
