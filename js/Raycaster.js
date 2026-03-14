@@ -1,4 +1,3 @@
-import Nivel from "./Nivel.js";
 import Jugador from "./Jugador.js";
 import Camara from "./Camara.js";
 import Render from "./Render.js";
@@ -57,6 +56,10 @@ let nivel;
 let jugador;
 let jugador_pos_inicial_x;
 let jugador_pos_inicial_y;
+let jugador_angulo_inicial;
+let	jugador_tamanio_inicial;
+let velocidad_jugador;
+let velocidad_angular;
 /* ************************************************************************************************************ */
 
 let input_manager;
@@ -83,7 +86,7 @@ function inicializar() {
 	/* ******************************************************************************************************** */
 	
 	tam_baldosa_input = document.getElementById ( "tam_baldosa_input" );
-	tam_baldosa_input.value = TAM_CANVAS.balsosa;
+	tam_baldosa_input.value = TAM_CANVAS.baldosa;
 	tam_baldosas = tam_baldosa_input.value;
 	
 	/* ******************************************************************************************************** */
@@ -115,17 +118,18 @@ function iniciar() {
 	camara = new Camara ( 0, 0, canvas.width, canvas.height );
 	render = new Render ( canvas_contexto );
 	
-	/*
-	let jugador_pos_inicial_x = 800;
-	let jugador_pos_inicial_y = 200;
-	let angulo_inicial = JUGADOR_PARAMS.angulo;
-	let tamanio_jugador_inicial = JUGADOR_PARAMS.tamanio_jugador_inicial; //para test, luego en relacion a baldosa
+	/* Jugador ************************************************************************************************ */
+	//jugador_angulo_inicial = JUGADOR_PARAMS.angulo;
+	//jugador_tamanio_inicial = JUGADOR_PARAMS.tamanio_jugador_inicial;
+	jugador_tamanio_inicial = tam_baldosas * JUGADOR_PARAMS.tamanio_porcentaje_baldosa;
+	velocidad_jugador = JUGADOR_PARAMS.velocidad; //temporal, luego estará basado en los inputs
+	velocidad_angular = JUGADOR_PARAMS.velocidad_angular; //temporal??
+	jugador = new Jugador ( canvas_contexto, mundo, jugador_pos_inicial_x, jugador_pos_inicial_y, jugador_angulo_inicial, jugador_tamanio_inicial, velocidad_jugador, velocidad_angular );
 	
-	nivel = new Nivel ( canvas_contexto, mapa );
-	jugador = new Jugador ( canvas_contexto, mapa, jugador_pos_inicial_x, jugador_pos_inicial_y, angulo_inicial, tamanio_jugador_inicial );
-	*/
-	
+	/* Controles ********************************************************************************************** */
 	input_manager = new InputManager (  );
+	
+	/* Inicio del bucle *************************************************************************************** */
 	ultimo_tiempo = performance.now() / 1000; //tiempo en alta precision independiente de la hora, pasado a segundos
 	requestAnimationFrame ( buclePrincipal ); //pasa como parametro p_tiempo automaticamente
 }
@@ -133,7 +137,6 @@ function iniciar() {
 /* ************************************************************************************************************ */
 
 function buclePrincipal ( p_tiempo ){
-	//console.log ( "fotograma" );
 	
 	/* ******************************************************************************************************** */
 	//Control del tiempo de actualizacion con delta time
@@ -157,7 +160,6 @@ function buclePrincipal ( p_tiempo ){
 	
 	/* ******************************************************************************************************** */
 	// Dibujar a todo lo que pueda requestAnimationFrame
-	borrarCanvas ();
 	dibujar ();
 	
 	requestAnimationFrame ( buclePrincipal );
@@ -167,16 +169,17 @@ function buclePrincipal ( p_tiempo ){
 
 function update ( p_delta_time ) {
 	// La ? indica que ejecute el metodo actualizar si existe, si no, no da error
+	// Ejemplo: nivel.actualizar?.( p_delta_time );
 	
-	let velocidad_jugador = JUGADOR_PARAMS.velocidad; //temporal, luego estará basado en los inputs
+	jugador.actualizar ( p_delta_time, velocidad_jugador, input_manager );
+	camara.actualizar ( jugador );
 	
-	//jugador.actualizar ( p_delta_time, velocidad_jugador, 45, input_manager );
-	//nivel.actualizar?.( p_delta_time );
 }
 
 /* ************************************************************************************************************ */
 
 function dibujar () {
+	borrarCanvas ();
 	render.dibujarMapa ( mundo, camara );
 	render.dibujarJugador ( jugador, camara );
 }
@@ -203,6 +206,7 @@ function establecerTamCanvas () {
 document.getElementById("tam_baldosa_boton").addEventListener("click", establecerTamBaldosa);
 function establecerTamBaldosa() {
 	tam_baldosas = Number ( tam_baldosa_input.value );
+	jugador.establecerTamanio ( tam_baldosas * JUGADOR_PARAMS.tamanio_porcentaje_baldosa );
 	
 	//Desde cero o conservar el estado, empezaremos desde cero
 	cargarMapa();
@@ -213,9 +217,11 @@ function establecerTamBaldosa() {
 document.getElementById("select_mapa_boton").addEventListener("click", cargarMapa);
 function cargarMapa() {
 	if ( cargar_archivo_mapa_input.files.length > 0 ) {
-		mapa = archivo_json[select_mapa_desplegable.value];
+		nivel = archivo_json[select_mapa_desplegable.value];
+		mapa = nivel.mapa;
 	} else {
-		mapa = MAPAS[select_mapa_desplegable.value];
+		nivel = MAPAS[select_mapa_desplegable.value];
+		mapa = nivel.mapa;
 	}
 	
 	procesarMapa ( mapa, canvas_contexto );
@@ -247,10 +253,10 @@ function procesarMapa ( p_mapa, p_canvas_contexto ) {
 	// pero de objetos baldosas, será nuestro mundo del juego
 	mundo = crearMundo ( p_mapa, tam_baldosas );
 	
-	// Buscar posicion de jugador
-	let posicion_inicial_jugador = posicionJugador ( p_mapa, tam_baldosas );
-	jugador_pos_inicial_x = posicion_inicial_jugador.x;
-	jugador_pos_inicial_y = posicion_inicial_jugador.y;
+	// Posicion de jugador
+	jugador_pos_inicial_x = ( nivel.entidades.jugador.x * tam_baldosas ) + ( tam_baldosas / 2 );
+	jugador_pos_inicial_y = ( nivel.entidades.jugador.y * tam_baldosas ) + ( tam_baldosas / 2 );
+	jugador_angulo_inicial = nivel.entidades.jugador.angulo;
 	
 }
 
@@ -273,10 +279,10 @@ function crearMundo ( p_mapa, p_tam_baldosas ) {
 			}
             
             const pos_x0 = x * p_tam_baldosas; //Ejemplo: si es x=1 y el tamaño es 10, pos_x0 es 10
-            const pos_x1 = pos_x0 + tam_baldosas; // Ejemplo: si pos_x0 es 10 y el tamaño es 10 pos_x1 es 20
+            const pos_x1 = pos_x0 + p_tam_baldosas; // Ejemplo: si pos_x0 es 10 y el tamaño es 10 pos_x1 es 20
             
-            const pos_y0 = y * tam_baldosas;
-            const pos_y1 = pos_y0 + tam_baldosas;
+            const pos_y0 = y * p_tam_baldosas;
+            const pos_y1 = pos_y0 + p_tam_baldosas;
             
             let baldosa = new Baldosa ( pos_x0, pos_x1, pos_y0, pos_y1, tipo );
             aux_mundo[y][x] = baldosa;
@@ -284,38 +290,6 @@ function crearMundo ( p_mapa, p_tam_baldosas ) {
 	}
 	
 	return aux_mundo;
-}
-
-/* ************************************************************************************************************ */
-
-function posicionJugador ( p_mapa, p_tam_baldosas ) {
-	const filas = p_mapa.length;
-	const columnas = p_mapa[0].length;
-
-	const posicion = { 
-		x: null, 
-		y: null
-    };
-    
-    let encontrado = false;
-    
-	for ( let y = 0; y < filas && !encontrado; y++ ) {
-		for ( let x = 0; x < columnas; x++ ) {
-			if ( p_mapa[y][x] === 2 ) {
-				//Calcula la posicion de inicio de la baldosa y la suma la mitad del tamaño para
-				// que quede en el centro
-				posicion.x = x * p_tam_baldosas + ( p_tam_baldosas / 2 );
-				posicion.y = y * p_tam_baldosas + ( p_tam_baldosas / 2 );
-	
-				encontrado = true;
-				
-				break;
-	
-			}
-		}
-	}
-	
-	return posicion;
 }
 
 /* ************************************************************************************************************ */
