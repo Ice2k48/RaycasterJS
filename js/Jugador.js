@@ -1,4 +1,5 @@
 /* ************************************************************************************************************ */
+import Mundo from "./Mundo.js";
 
 import { CASILLAS, COLORES, JUGADOR_PARAMS } from "./Constantes.js";
 import { gradosARadianes } from "./Utils.js";

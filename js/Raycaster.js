@@ -3,11 +3,13 @@ import Camara from "./Camara.js";
 import Render from "./Render.js";
 import Baldosa from "./Baldosa.js";
 import InputManager from "./InputManager.js";
+import Mundo from "./Mundo.js";
+
 import { leerArchivo } from "./Utils.js";
 
 /* ************************************************************************************************************ */
 
-import { TAM_CANVAS, JUGADOR_PARAMS, FPS, CASILLAS, COLORES } from "./Constantes.js";
+import { TAM_CANVAS, JUGADOR_PARAMS, FPS, CASILLAS, COLORES, MODOS_CAMARA } from "./Constantes.js";
 import { MAPAS } from "./Mapas.js";
 
 /* ************************************************************************************************************ */
@@ -39,7 +41,7 @@ let canvas_tam_alto;
 
 /* ************************************************************************************************************ */
 
-let mundo; //es una matriz de baldosas, de las misma dimensiones que el mapa
+let mundo; //Clase mundo
 let tam_baldosas;
 
 /* ************************************************************************************************************ */
@@ -115,8 +117,14 @@ function iniciar() {
 	/* Mapa *************************************************************************************************** */
 	
 	cargarMapa();
-	camara = new Camara ( 0, 0, canvas.width, canvas.height );
+	
+	const posicion_inicial_camara_x = 0;
+	const posicion_inicial_camara_y = 0;
+	
+	camara = new Camara ( posicion_inicial_camara_x, posicion_inicial_camara_y, canvas.width, canvas.height );
 	render = new Render ( canvas_contexto );
+	
+	camara.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
 	
 	/* Jugador ************************************************************************************************ */
 	//jugador_angulo_inicial = JUGADOR_PARAMS.angulo;
@@ -172,7 +180,7 @@ function update ( p_delta_time ) {
 	// Ejemplo: nivel.actualizar?.( p_delta_time );
 	
 	jugador.actualizar ( p_delta_time, velocidad_jugador, input_manager );
-	camara.actualizar ( jugador );
+	camara.actualizar ( jugador, mundo );
 	
 }
 
@@ -224,7 +232,7 @@ function cargarMapa() {
 		mapa = nivel.mapa;
 	}
 	
-	procesarMapa ( mapa, canvas_contexto );
+	procesarMapa ( mapa );
 }
 
 /* ************************************************************************************************************ */
@@ -248,48 +256,16 @@ async function cargarArchivoMapa() {
 
 /* ************************************************************************************************************ */
 
-function procesarMapa ( p_mapa, p_canvas_contexto ) {
+function procesarMapa ( p_mapa ) {
 	//Tenemos que crear una matriz del mismo tamaño de el mapa
 	// pero de objetos baldosas, será nuestro mundo del juego
-	mundo = crearMundo ( p_mapa, tam_baldosas );
+	mundo = new Mundo ( p_mapa, tam_baldosas );
 	
 	// Posicion de jugador
 	jugador_pos_inicial_x = ( nivel.entidades.jugador.x * tam_baldosas ) + ( tam_baldosas / 2 );
 	jugador_pos_inicial_y = ( nivel.entidades.jugador.y * tam_baldosas ) + ( tam_baldosas / 2 );
 	jugador_angulo_inicial = nivel.entidades.jugador.angulo;
 	
-}
-
-/* ************************************************************************************************************ */
-
-function crearMundo ( p_mapa, p_tam_baldosas ) {
-	const filas = p_mapa.length;
-	const columnas = p_mapa[0].length;
-	
-	const aux_mundo = [];
-	
-	for ( let y = 0; y < filas; y++ ) {
-		aux_mundo[y] = [];
-		
-		for ( let x = 0; x < columnas; x++ ) {
-            let tipo = p_mapa[y][x];
-            
-            if ( tipo != CASILLAS.obstaculo ) {
-				tipo = CASILLAS.libre;
-			}
-            
-            const pos_x0 = x * p_tam_baldosas; //Ejemplo: si es x=1 y el tamaño es 10, pos_x0 es 10
-            const pos_x1 = pos_x0 + p_tam_baldosas; // Ejemplo: si pos_x0 es 10 y el tamaño es 10 pos_x1 es 20
-            
-            const pos_y0 = y * p_tam_baldosas;
-            const pos_y1 = pos_y0 + p_tam_baldosas;
-            
-            let baldosa = new Baldosa ( pos_x0, pos_x1, pos_y0, pos_y1, tipo );
-            aux_mundo[y][x] = baldosa;
-		}
-	}
-	
-	return aux_mundo;
 }
 
 /* ************************************************************************************************************ */

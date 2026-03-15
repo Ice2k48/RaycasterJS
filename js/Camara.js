@@ -17,7 +17,7 @@ export default class Camara {
 		this.#ancho = p_ancho;
 		this.#alto = p_alto;
 		
-		this.#modo_camara = MODOS_CAMARA.seguir_jugador;
+		this.#modo_camara = MODOS_CAMARA.seguir_jugador; //por defecto, para que tenga una camara correcta
 	}
 	
 	/* ******************************************************************************************************** */
@@ -40,7 +40,7 @@ export default class Camara {
 	
 	/* ******************************************************************************************************** */
 	
-	actualizar ( p_jugador ) {
+	actualizar ( p_jugador, p_mundo ) {
 		switch ( this.#modo_camara ) {
 			
 			case MODOS_CAMARA.seguir_jugador:
@@ -78,7 +78,6 @@ export default class Camara {
 		// 			Centro canvas: 800 x 400
 		//			camara.pos_x = 1320 - 800 = 520 -> x para esquina izquierda
 		//			camara.pos_y = 600  - 400 = 200 -> y para esquina izquierda
-    this.#pos_y = valores_jugador.posicion_y - (this.#alto / 2);
 		this.#pos_x = valores_jugador.posicion_x - (this.#ancho / 2);
 		this.#pos_y = valores_jugador.posicion_y - (this.#alto / 2);
 	}

@@ -1,7 +1,6 @@
 /* ************************************************************************************************************ */
-import Baldosa from "./Baldosa.js";
-import Jugador from "./Jugador.js";
-import { TAM_CANVAS, CASILLAS, COLORES } from "./Constantes.js";
+
+import { COLORES } from "./Constantes.js";
 
 /* ************************************************************************************************************ */
 
@@ -19,13 +18,17 @@ export default class Render {
 	dibujarMapa ( p_mundo, p_camara ) {
 		let color;
 		
-		console.log(p_mundo.length, p_mundo[0].length);
-		
+		//ToDo ahora mundo es una Clase!!! cambiar
+		const mundo = p_mundo.obtenerMundo ();
+		const valores_mundo = p_mundo.obtenerValoresMundo ();
 		const rectangulo_camara = p_camara.obtenerRectangulo();
 		
-		for ( let y = 0; y < p_mundo.length; y++) {
-			for ( let x = 0; x < p_mundo[y].length; x++) {
-				let baldosa_actual = p_mundo[y][x];
+		//console.log ( "[Render.js:dibujarMapar()] Mundo Alto:" + valores_mundo.alto_pixeles + " | Mundo Ancho: " + valores_mundo.ancho_pixeles );
+		//console.log ( "[Render.js:dibujarMapar()] Mundo Alto:" + valores_mundo.alto_coordenadas + " | Mundo Ancho: " + valores_mundo.ancho_coordenadas );
+		
+		for ( let y = 0; y < valores_mundo.alto_coordenadas; y++) {
+			for ( let x = 0; x < valores_mundo.ancho_coordenadas; x++) {
+				let baldosa_actual = mundo[y][x];
 				
 				if ( baldosa_actual.esObstaculo () ) {
 					color = COLORES.negro;
@@ -60,8 +63,8 @@ export default class Render {
 		const rectangulo_camara = p_camara.obtenerRectangulo();
 		
 		//Convertir valores del mundo a valores del canvas
-		const pantalla_x = valores_jugador.posicion_x - rectangulo_camara.x;
-		const pantalla_y = valores_jugador.posicion_y - rectangulo_camara.y;
+		const pantalla_x = Math.floor ( valores_jugador.posicion_x - rectangulo_camara.x );
+		const pantalla_y = Math.floor ( valores_jugador.posicion_y - rectangulo_camara.y );
 		
 		const radio = valores_jugador.tamanio / 2; //entre dos porque es radio, no diametro
 		
