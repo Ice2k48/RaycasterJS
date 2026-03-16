@@ -76,8 +76,42 @@ export default class Jugador {
 		
 		const velocidad = this.#velocidad_jugador * direccion; // px/seg, con signo de direccion
 		
-		this.#posicion_x += Math.cos ( this.#angulo ) * velocidad * p_deltatime;
-		this.#posicion_y += Math.sin ( this.#angulo ) * velocidad * p_deltatime;
+		//Comprobamos si colisiona
+		let nueva_posicion_x = this.#posicion_x + Math.cos ( this.#angulo ) * velocidad * p_deltatime;
+		let nueva_posicion_y = this.#posicion_y + Math.sin ( this.#angulo ) * velocidad * p_deltatime;
+		
+		const radio = ( this.#tamanio / 2 );
+		
+		//tenemos en cuenta el radio
+		let nueva_posicion_x_radio_mas = nueva_posicion_x + radio;
+		let nueva_posicion_x_radio_menos = nueva_posicion_x - radio;
+		
+		let nueva_posicion_y_radio_mas = nueva_posicion_y + radio;
+		let nueva_posicion_y_radio_menos = nueva_posicion_y - radio;
+		
+		//Hacemos la comprobacion en dos pasos para que permita el movimiento en diagonal y seguir paredes
+		//Para ello vamos a simplificar el circulo en un cuadrado, calculando sus cuatro esquinas
+		//Colision en X
+		if ( 
+				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_mas, ( this.#posicion_y + radio ) ).esObstaculo() ||
+				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_mas, ( this.#posicion_y - radio ) ).esObstaculo() ||
+				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_menos, ( this.#posicion_y + radio ) ).esObstaculo() ||
+				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_menos, ( this.#posicion_y - radio ) ).esObstaculo() ) {
+			
+		} else { //no es obstaculo, movemos al jugador
+			this.#posicion_x = nueva_posicion_x;
+		}
+		//Colision en Y
+		if ( 
+				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x + radio ), nueva_posicion_y_radio_mas ).esObstaculo() ||
+				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x - radio ), nueva_posicion_y_radio_mas ).esObstaculo() ||
+				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x + radio ), nueva_posicion_y_radio_menos ).esObstaculo() ||
+				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x - radio ), nueva_posicion_y_radio_menos ).esObstaculo() ) {
+			
+		} else { //no es obstaculo, movemos al jugador
+			this.#posicion_y = nueva_posicion_y;
+		}
+		
 	}
 	
 	/* ******************************************************************************************************** */

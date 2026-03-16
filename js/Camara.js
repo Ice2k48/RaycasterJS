@@ -44,7 +44,7 @@ export default class Camara {
 		switch ( this.#modo_camara ) {
 			
 			case MODOS_CAMARA.seguir_jugador:
-				this.#actualizarSeguirJugador ( p_jugador );
+				this.#actualizarSeguirJugador ( p_jugador, p_mundo );
 				
 				break;
 			
@@ -67,8 +67,9 @@ export default class Camara {
 	
 	/* ******************************************************************************************************** */
 	
-	#actualizarSeguirJugador ( p_jugador ) {
+	#actualizarSeguirJugador ( p_jugador, p_mundo ) {
 		const valores_jugador = p_jugador.obtenerValoresJugador();
+		const valores_mundo = p_mundo.obtenerValoresMundo();
 		
 		//Con los valores de la posicion del jugador, ponemos la camara siempre encima
 		// de forma que el jugador este siempre en el centro del canvas
@@ -80,6 +81,46 @@ export default class Camara {
 		//			camara.pos_y = 600  - 400 = 200 -> y para esquina izquierda
 		this.#pos_x = valores_jugador.posicion_x - (this.#ancho / 2);
 		this.#pos_y = valores_jugador.posicion_y - (this.#alto / 2);
+		
+		/* Limitar cámara al mundo *************************************************************************** */
+		// Ahora que ya sigue al jugador, vamos a hacer que deje de seguirle cuando llegue a un borde del mapa
+		
+		/* **************************************************************************************************** */
+		// EJE X
+		// mapa más pequeño en X que el canvas, centramos mapa en eje X
+		if ( valores_mundo.ancho_pixeles <= this.#ancho ) {
+			this.#pos_x = ( valores_mundo.ancho_pixeles - this.#ancho ) / 2;
+		} else {
+			// Si se sale por la izquierda, se ajusta al borde izquierdo
+			if ( this.#pos_x < 0 ) {
+				this.#pos_x = 0;
+			}
+			
+			// Si se sale por la derecha, se ajusta al borde derecho
+			if ( this.#pos_x > valores_mundo.ancho_pixeles - this.#ancho ) {
+				this.#pos_x = valores_mundo.ancho_pixeles - this.#ancho;
+			}
+	
+		}
+	
+		/* **************************************************************************************************** */
+		// EJE Y
+		// mapa más pequeño en Y que el canvas, centramos mapa en eje Y
+		if ( valores_mundo.alto_pixeles <= this.#alto ) {
+			this.#pos_y = ( valores_mundo.alto_pixeles - this.#alto ) / 2;
+		} else {
+			// Si se sale por arriba, se ajusta al borde superior
+			if ( this.#pos_y < 0 ) {
+				this.#pos_y = 0;
+			}
+			
+			// Si se sale por abajo, se ajusta al borde inferior
+			if ( this.#pos_y > valores_mundo.alto_pixeles - this.#alto ) {
+				this.#pos_y = valores_mundo.alto_pixeles - this.#alto;
+			}
+	
+		}
+		
 	}
 	
 	/* ******************************************************************************************************** */

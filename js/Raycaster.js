@@ -195,7 +195,12 @@ function dibujar () {
 /* ************************************************************************************************************ */
 
 function borrarCanvas () {
-	canvas_contexto.clearRect(0, 0, canvas.width, canvas.height);
+	//Limpiar canvas
+	//canvas_contexto.clearRect(0, 0, canvas.width, canvas.height);
+	
+	//En vez de vaciarlo, vamos a darle un fondo de color negro para que sea uniforme
+	canvas_contexto.fillStyle = COLORES.negro;
+	canvas_contexto.fillRect ( 0, 0, canvas.width, canvas.height );
 }
 
 /* ************************************************************************************************************ */
