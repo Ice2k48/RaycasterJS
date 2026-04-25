@@ -1,6 +1,6 @@
 /* ************************************************************************************************************ */
 
-import { COLORES } from "./Constantes.js";
+import { COLORES, JUGADOR_PARAMS } from "./Constantes.js";
 
 /* ************************************************************************************************************ */
 
@@ -15,29 +15,25 @@ export default class Render {
 	
 	/* ******************************************************************************************************** */
 
-	dibujarMapa ( p_mundo, p_camara ) {
+	dibujarMapa ( p_mundo, p_camara, p_n_tamanio_baldosa_render ) {
 		let color;
 		
-		//ToDo ahora mundo es una Clase!!! cambiar
 		const mundo = p_mundo.obtenerMundo ();
 		const valores_mundo = p_mundo.obtenerValoresMundo ();
 		const rectangulo_camara = p_camara.obtenerRectangulo();
 		
-		//console.log ( "[Render.js:dibujarMapar()] Mundo Alto:" + valores_mundo.alto_pixeles + " | Mundo Ancho: " + valores_mundo.ancho_pixeles );
-		console.log ( "[Render.js:dibujarMapar()] Mundo Alto:" + valores_mundo.alto_coordenadas + " | Mundo Ancho: " + valores_mundo.ancho_coordenadas );
-		
-		//En vex de hacer doble bucle 
-		//for ( let y = 0; y < valores_mundo.alto_coordenadas; y++) {
-		//	for ( let x = 0; x < valores_mundo.ancho_coordenadas; x++) {
-		//Para recorrer el mundo, donde miramos muchas baldosas que no se van a dibujar
-		// y puede ser poco eficiente en mapas grandes
-		//Vamos a calcular las baldosas que están dentro del rectangulo de la camara
-		// y solo recorrer y dibujar esas
-		let inicio_x = Math.floor ( rectangulo_camara.x / valores_mundo.tamanio_baldosas );
-		let fin_x = Math.floor ( ( rectangulo_camara.x + rectangulo_camara.ancho ) / valores_mundo.tamanio_baldosas ) + 1;
+		/*
+			p_n_tamanio_baldosa_render indica cuántos píxeles ocupa una unidad de mundo en este render.
 
-		let inicio_y = Math.floor ( rectangulo_camara.y / valores_mundo.tamanio_baldosas );
-		let fin_y = Math.floor ( ( rectangulo_camara.y + rectangulo_camara.alto) / valores_mundo.tamanio_baldosas ) + 1;
+			Ejemplos:
+			- Render principal: 1 baldosa lógica = 80 px
+			- Render GUI/minimapa: 1 baldosa lógica = 16 px
+		*/
+		let inicio_x = Math.floor ( rectangulo_camara.x );
+		let fin_x = Math.floor ( rectangulo_camara.x + rectangulo_camara.ancho ) + 1;
+
+		let inicio_y = Math.floor ( rectangulo_camara.y );
+		let fin_y = Math.floor ( rectangulo_camara.y + rectangulo_camara.alto ) + 1;
 		
 		// para que no se desborde la camara en x
 		if ( inicio_x < 0 ) {
@@ -55,15 +51,10 @@ export default class Render {
 			fin_y = valores_mundo.alto_coordenadas;
 		}
 		
-		console.log ( "[Render.js:dibujarMapar()] inicio_x:" + inicio_x + " | fin_x: " + fin_x );
-		console.log ( "[Render.js:dibujarMapar()] inicio_y:" + inicio_y + " | fin_y: " + fin_y );
-		
+		/* Dibujar baldosas visibles ************************************************************************* */
 		for (let y = inicio_y; y < fin_y; y++) {
 			for (let x = inicio_x; x < fin_x; x++) {
 				let baldosa_actual = mundo[y][x];
-				
-				console.log ( "[Render.js:dibujarMapar()] x:" + x + " | y: " + y );
-				console.log ( "[Render.js:dibujarMapar()] baldosa_actual:" + baldosa_actual );
 				
 				if ( baldosa_actual.esObstaculo () ) {
 					color = COLORES.negro;
@@ -74,15 +65,11 @@ export default class Render {
 				const rectangulo_baldosa = baldosa_actual.obtenerRectangulo ();
 				
 				//Convertir valores del mundo a valores del canvas
-				/* Esto usa decimales y provoca suciedad en el canvas
-				const pantalla_x = rectangulo_baldosa.x - rectangulo_camara.x;
-				const pantalla_y = rectangulo_baldosa.y - rectangulo_camara.y;
-				*/
-				const pantalla_x = Math.floor(rectangulo_baldosa.x - rectangulo_camara.x);
-				const pantalla_y = Math.floor(rectangulo_baldosa.y - rectangulo_camara.y);
+				const pantalla_x = Math.floor ( ( rectangulo_baldosa.x - rectangulo_camara.x ) * p_n_tamanio_baldosa_render );
+				const pantalla_y = Math.floor ( ( rectangulo_baldosa.y - rectangulo_camara.y ) * p_n_tamanio_baldosa_render );
 				
-				const ancho = Math.floor(rectangulo_baldosa.ancho);
-				const alto  = Math.floor(rectangulo_baldosa.alto);
+				const ancho = Math.ceil ( rectangulo_baldosa.ancho * p_n_tamanio_baldosa_render );
+				const alto = Math.ceil ( rectangulo_baldosa.alto * p_n_tamanio_baldosa_render );
 				
 				this.#canvas_contexto.fillStyle = color;
 				this.#canvas_contexto.fillRect ( pantalla_x, pantalla_y, ancho, alto );
@@ -93,15 +80,15 @@ export default class Render {
 	
 	/* ******************************************************************************************************** */
 
-	dibujarJugador ( p_jugador, p_camara ) {
+	dibujarJugador ( p_jugador, p_camara, p_n_tamanio_baldosa_render ) {
 		const valores_jugador = p_jugador.obtenerValoresJugador ();
 		const rectangulo_camara = p_camara.obtenerRectangulo();
 		
 		//Convertir valores del mundo a valores del canvas
-		const pantalla_x = Math.floor ( valores_jugador.posicion_x - rectangulo_camara.x );
-		const pantalla_y = Math.floor ( valores_jugador.posicion_y - rectangulo_camara.y );
+		const pantalla_x = Math.floor ( ( valores_jugador.posicion_x - rectangulo_camara.x ) * p_n_tamanio_baldosa_render );
+		const pantalla_y = Math.floor ( ( valores_jugador.posicion_y - rectangulo_camara.y ) * p_n_tamanio_baldosa_render );
 		
-		const radio = valores_jugador.tamanio / 2; //entre dos porque es radio, no diametro
+		const radio = ( valores_jugador.tamanio / 2 ) * p_n_tamanio_baldosa_render; //entre dos porque es radio, no diametro
 		
 		this.#canvas_contexto.beginPath();
 		this.#canvas_contexto.arc ( pantalla_x, pantalla_y, radio, 0, Math.PI * 2);
@@ -111,7 +98,7 @@ export default class Render {
 		//dibujar direccion
 		this.#canvas_contexto.beginPath ();
 		this.#canvas_contexto.moveTo ( pantalla_x, pantalla_y );
-		this.#canvas_contexto.lineTo ( pantalla_x + Math.cos ( valores_jugador.angulo ) * (radio * 3), pantalla_y + Math.sin ( valores_jugador.angulo ) * (radio * 3) );
+		this.#canvas_contexto.lineTo ( pantalla_x + Math.cos ( valores_jugador.angulo ) * ( radio * JUGADOR_PARAMS.tam_direccion ), pantalla_y + Math.sin ( valores_jugador.angulo ) * ( radio * JUGADOR_PARAMS.tam_direccion ) );
 		this.#canvas_contexto.strokeStyle = COLORES.blanco; // o el color que quieras
 		this.#canvas_contexto.stroke();
 		

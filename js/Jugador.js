@@ -1,35 +1,32 @@
 /* ************************************************************************************************************ */
-import Mundo from "./Mundo.js";
 
-import { CASILLAS, COLORES, JUGADOR_PARAMS } from "./Constantes.js";
 import { gradosARadianes } from "./Utils.js";
 
 /* ************************************************************************************************************ */
 
 export default class Jugador {
-	#canvas_contexto;
-	#posicion_x
-	#posicion_y
-	#mundo //lo dejamos por si comprobamos aqui la colision, se verá
-	#angulo //hacia donde esta mirando: 0º -> derecha; 90º -> abajo; 180º -> izquierda; 270º -> arriba
-	#tamanio //relacion con el tamaño de la baldosa Ej: tamanio jugador un 90% de una baldosa
-	#velocidad_jugador
-	#velocidad_angular
+	#posicion_x			//coordenada continua de mundo
+	#posicion_y			//coordenada continua de mundo
+	#mundo 				//Para las colisiones
+	#angulo 			//hacia donde esta mirando: 0º -> derecha; 90º -> abajo; 180º -> izquierda; 270º -> arriba
+	#tamanio 			//tamaño del jugador en unidades de mundo. Ejemplo: 0.7 ocupa el 70% de una baldosa
+	#velocidad_jugador	//unidades de mundo por segundo
+	#velocidad_angular	//grados por segundo
 	
-	constructor ( p_canvas_contexto, p_mundo, p_posicion_x, p_posicion_y, p_angulo, p_tamanio, p_velocidad_jugador, p_velocidad_angular ) {
-		this.#canvas_contexto = p_canvas_contexto;
-		
-		this.#posicion_x = p_posicion_x;
-		this.#posicion_y = p_posicion_y;
+	/* ******************************************************************************************************** */
+	
+	constructor ( p_mundo, p_n_posicion_x, p_n_posicion_y, p_n_angulo, p_n_tamanio, p_n_velocidad_jugador, p_n_velocidad_angular ) {
+		this.#posicion_x = p_n_posicion_x;
+		this.#posicion_y = p_n_posicion_y;
 		
 		this.#mundo = p_mundo;
 		
-		this.#angulo = gradosARadianes ( p_angulo );
+		this.#angulo = gradosARadianes ( p_n_angulo );
 		
-		this.#tamanio = p_tamanio;
+		this.#tamanio = p_n_tamanio;
 		
-		this.#velocidad_jugador = p_velocidad_jugador;
-		this.#velocidad_angular = p_velocidad_angular;
+		this.#velocidad_jugador = p_n_velocidad_jugador;
+		this.#velocidad_angular = p_n_velocidad_angular;
 	}
 	
 	/* ******************************************************************************************************** */
@@ -54,7 +51,7 @@ export default class Jugador {
 	
 	/* ******************************************************************************************************** */
 	
-	actualizar ( p_deltatime, p_velocidad_jugador, p_input ) {
+	actualizar ( p_deltatime, p_input ) {
 		
 		/* **************************************************************************************************** */
 		const velocidad_giro = gradosARadianes ( this.#velocidad_angular ); // rad/seg
@@ -74,7 +71,8 @@ export default class Jugador {
 		if ( p_input.estaPulsada ( "KeyW" ) ) { direccion += 1; } //adelante
 		if ( p_input.estaPulsada ( "KeyS" ) ) { direccion -= 1; } //atras
 		
-		const velocidad = this.#velocidad_jugador * direccion; // px/seg, con signo de direccion
+		/* Calcular nueva posicion ************************************************************************** */
+		const velocidad = this.#velocidad_jugador * direccion; // unidades del mundo/seg, con signo de direccion
 		
 		//Comprobamos si colisiona
 		let nueva_posicion_x = this.#posicion_x + Math.cos ( this.#angulo ) * velocidad * p_deltatime;
@@ -89,29 +87,54 @@ export default class Jugador {
 		let nueva_posicion_y_radio_mas = nueva_posicion_y + radio;
 		let nueva_posicion_y_radio_menos = nueva_posicion_y - radio;
 		
-		//Hacemos la comprobacion en dos pasos para que permita el movimiento en diagonal y seguir paredes
-		//Para ello vamos a simplificar el circulo en un cuadrado, calculando sus cuatro esquinas
+		/*
+			Hacemos la comprobacion en dos pasos para permitir deslizarse por paredes.
+
+			Primero intentamos mover en X.
+			Despues intentamos mover en Y.
+
+			Para la colision simplificamos el jugador como un cuadrado:
+			- izquierda  = posicion_x - radio
+			- derecha    = posicion_x + radio
+			- arriba     = posicion_y - radio
+			- abajo      = posicion_y + radio
+		*/
 		//Colision en X
 		if ( 
-				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_mas, ( this.#posicion_y + radio ) ).esObstaculo() ||
-				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_mas, ( this.#posicion_y - radio ) ).esObstaculo() ||
-				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_menos, ( this.#posicion_y + radio ) ).esObstaculo() ||
-				this.#mundo.obtenerBaldosaEn ( nueva_posicion_x_radio_menos, ( this.#posicion_y - radio ) ).esObstaculo() ) {
+				this.#esObstaculoEn ( nueva_posicion_x_radio_mas, this.#posicion_y + radio ) ||
+				this.#esObstaculoEn ( nueva_posicion_x_radio_mas, this.#posicion_y - radio ) ||
+				this.#esObstaculoEn ( nueva_posicion_x_radio_menos, this.#posicion_y + radio ) ||
+				this.#esObstaculoEn ( nueva_posicion_x_radio_menos, this.#posicion_y - radio ) ) {
 			
 		} else { //no es obstaculo, movemos al jugador
 			this.#posicion_x = nueva_posicion_x;
 		}
 		//Colision en Y
 		if ( 
-				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x + radio ), nueva_posicion_y_radio_mas ).esObstaculo() ||
-				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x - radio ), nueva_posicion_y_radio_mas ).esObstaculo() ||
-				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x + radio ), nueva_posicion_y_radio_menos ).esObstaculo() ||
-				this.#mundo.obtenerBaldosaEn ( ( this.#posicion_x - radio ), nueva_posicion_y_radio_menos ).esObstaculo() ) {
+				this.#esObstaculoEn ( this.#posicion_x + radio, nueva_posicion_y_radio_mas ) ||
+				this.#esObstaculoEn ( this.#posicion_x - radio, nueva_posicion_y_radio_mas ) ||
+				this.#esObstaculoEn ( this.#posicion_x + radio, nueva_posicion_y_radio_menos ) ||
+				this.#esObstaculoEn ( this.#posicion_x - radio, nueva_posicion_y_radio_menos ) ) {
 			
 		} else { //no es obstaculo, movemos al jugador
 			this.#posicion_y = nueva_posicion_y;
 		}
 		
+	}
+	
+	/* ******************************************************************************************************** */
+	// Funcion auxiliar para evitar error cuando obtenerBaldosaEn() devuelve null. 
+	// Consideramos que fuera del mapa es obstáculo.
+	#esObstaculoEn ( p_pos_x, p_pos_y ) {
+		let es_obstaculo = true;
+		
+		const baldosa = this.#mundo.obtenerBaldosaEn ( p_pos_x, p_pos_y );
+		
+		if ( baldosa !== null ) {
+			es_obstaculo = baldosa.esObstaculo ();
+		}
+		
+		return es_obstaculo;
 	}
 	
 	/* ******************************************************************************************************** */

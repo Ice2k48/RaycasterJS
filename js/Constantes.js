@@ -1,20 +1,26 @@
 /* ************************************************************************************************************ */
 //Tamaño canvas
 export const TAM_CANVAS = Object.freeze ( {
-	ancho: 1600,
-	alto: 800,
+	ancho: 1900,
+	alto: 650,
 	baldosa: 80
+});
+
+export const TAM_CANVAS_GUI = Object.freeze ( {
+	ancho: 350,
+	alto: 150,
+	baldosa: 16
 });
 
 /* ************************************************************************************************************ */
 //Parametros por defecto del jugador (pueden variar en tiempo de ejecucion)
 export const JUGADOR_PARAMS = Object.freeze ( {
-	velocidad: 128, // px/seg
-	radio: 20,
-	tam_direccion: 64,
+	velocidad: 1.6, // unidades del mundo/seg
+	radio: 0.25,
+	tam_direccion: 3, //veces el radio
 	angulo: 0,
 	velocidad_angular: 180, // grados/seg
-	tamanio_jugador_inicial: 20, //es el radio si dibujamos un circulo
+	tamanio_jugador_inicial: 0.5, //es el diametro si dibujamos un circulo
 	tamanio_porcentaje_baldosa: 0.7
 });
 

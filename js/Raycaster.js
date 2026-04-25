@@ -1,7 +1,6 @@
 import Jugador from "./Jugador.js";
 import Camara from "./Camara.js";
 import Render from "./Render.js";
-import Baldosa from "./Baldosa.js";
 import InputManager from "./InputManager.js";
 import Mundo from "./Mundo.js";
 
@@ -9,7 +8,7 @@ import { leerArchivo } from "./Utils.js";
 
 /* ************************************************************************************************************ */
 
-import { TAM_CANVAS, JUGADOR_PARAMS, FPS, CASILLAS, COLORES, MODOS_CAMARA } from "./Constantes.js";
+import { TAM_CANVAS, TAM_CANVAS_GUI, JUGADOR_PARAMS, FPS, COLORES, MODOS_CAMARA } from "./Constantes.js";
 import { MAPAS } from "./Mapas.js";
 
 /* ************************************************************************************************************ */
@@ -39,6 +38,11 @@ let canvas_contexto;
 let canvas_tam_ancho;
 let canvas_tam_alto;
 
+let canvas_gui;
+let canvas_gui_contexto;
+let canvas_gui_tam_ancho;
+let canvas_gui_tam_alto;
+
 /* ************************************************************************************************************ */
 
 let mundo; //Clase mundo
@@ -48,6 +52,8 @@ let tam_baldosas;
 
 let camara; 
 let render;
+let camara_gui; 
+let render_gui;
 
 /* ************************************************************************************************************ */
 
@@ -82,14 +88,14 @@ function inicializar() {
 	tam_canvas_input_alto = document.getElementById ( "tam_canvas_input_alto" );
 	tam_canvas_input_ancho.value = TAM_CANVAS.ancho;
 	tam_canvas_input_alto.value = TAM_CANVAS.alto;
-	canvas_tam_ancho = tam_canvas_input_ancho.value;
-	canvas_tam_alto = tam_canvas_input_alto.value;
+	canvas_tam_ancho = Number ( tam_canvas_input_ancho.value );
+	canvas_tam_alto = Number ( tam_canvas_input_alto.value );
 	
 	/* ******************************************************************************************************** */
 	
 	tam_baldosa_input = document.getElementById ( "tam_baldosa_input" );
 	tam_baldosa_input.value = TAM_CANVAS.baldosa;
-	tam_baldosas = tam_baldosa_input.value;
+	tam_baldosas = Number ( tam_baldosa_input.value );
 	
 	/* ******************************************************************************************************** */
 	
@@ -111,35 +117,39 @@ function iniciar() {
 	canvas = document.getElementById ( "canvas" );
 	canvas_contexto = canvas.getContext ("2d");
 	
-	canvas.width = Number ( tam_canvas_input_ancho.value );
-	canvas.height = Number ( tam_canvas_input_alto.value );
+	canvas_gui = document.getElementById ( "canvas_gui_mapa" );
+	canvas_gui_contexto = canvas_gui.getContext ("2d");
+	
+	actualizarCanvasPrincipal();
+	actualizarCanvasGui();
 	
 	/* Mapa *************************************************************************************************** */
 	
 	cargarMapa();
 	
-	const posicion_inicial_camara_x = 0;
-	const posicion_inicial_camara_y = 0;
+	/* Cámaras ************************************************************************************************ */
 	
-	camara = new Camara ( posicion_inicial_camara_x, posicion_inicial_camara_y, canvas.width, canvas.height );
-	render = new Render ( canvas_contexto );
+	crearCamaras();
 	
 	camara.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
+	camara_gui.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
+	
+	/* Render ************************************************************************************************* */
+	
+	crearRenders();
 	
 	/* Jugador ************************************************************************************************ */
-	//jugador_angulo_inicial = JUGADOR_PARAMS.angulo;
-	//jugador_tamanio_inicial = JUGADOR_PARAMS.tamanio_jugador_inicial;
-	jugador_tamanio_inicial = tam_baldosas * JUGADOR_PARAMS.tamanio_porcentaje_baldosa;
-	velocidad_jugador = JUGADOR_PARAMS.velocidad; //temporal, luego estará basado en los inputs
-	velocidad_angular = JUGADOR_PARAMS.velocidad_angular; //temporal??
-	jugador = new Jugador ( canvas_contexto, mundo, jugador_pos_inicial_x, jugador_pos_inicial_y, jugador_angulo_inicial, jugador_tamanio_inicial, velocidad_jugador, velocidad_angular );
+
+	crearJugador();
 	
 	/* Controles ********************************************************************************************** */
-	input_manager = new InputManager (  );
+
+	input_manager = new InputManager();
 	
 	/* Inicio del bucle *************************************************************************************** */
-	ultimo_tiempo = performance.now() / 1000; //tiempo en alta precision independiente de la hora, pasado a segundos
-	requestAnimationFrame ( buclePrincipal ); //pasa como parametro p_tiempo automaticamente
+
+	ultimo_tiempo = performance.now() / 1000; // tiempo en alta precision independiente de la hora, pasado a segundos
+	requestAnimationFrame ( buclePrincipal ); // pasa como parametro p_tiempo automaticamente
 }
 
 /* ************************************************************************************************************ */
@@ -179,8 +189,9 @@ function update ( p_delta_time ) {
 	// La ? indica que ejecute el metodo actualizar si existe, si no, no da error
 	// Ejemplo: nivel.actualizar?.( p_delta_time );
 	
-	jugador.actualizar ( p_delta_time, velocidad_jugador, input_manager );
+	jugador.actualizar ( p_delta_time, input_manager );
 	camara.actualizar ( jugador, mundo );
+	camara_gui.actualizar ( jugador, mundo );
 	
 }
 
@@ -188,8 +199,12 @@ function update ( p_delta_time ) {
 
 function dibujar () {
 	borrarCanvas ();
-	render.dibujarMapa ( mundo, camara );
-	render.dibujarJugador ( jugador, camara );
+	
+	render.dibujarMapa ( mundo, camara, tam_baldosas );
+	render.dibujarJugador ( jugador, camara, tam_baldosas );
+	
+	render_gui.dibujarMapa ( mundo, camara_gui, TAM_CANVAS_GUI.baldosa );
+	render_gui.dibujarJugador ( jugador, camara_gui, TAM_CANVAS_GUI.baldosa );
 }
 
 /* ************************************************************************************************************ */
@@ -201,17 +216,28 @@ function borrarCanvas () {
 	//En vez de vaciarlo, vamos a darle un fondo de color negro para que sea uniforme
 	canvas_contexto.fillStyle = COLORES.negro;
 	canvas_contexto.fillRect ( 0, 0, canvas.width, canvas.height );
+	
+	canvas_gui_contexto.fillStyle = COLORES.negro;
+	canvas_gui_contexto.fillRect ( 0, 0, canvas_gui.width, canvas_gui.height );
 }
 
 /* ************************************************************************************************************ */
 //Cuando se pulsa el boton tam_canvas_boton se establece el tamaño del canvas
 document.getElementById("tam_canvas_boton").addEventListener("click", establecerTamCanvas);
 function establecerTamCanvas () {
-	canvas_tam_ancho = tam_canvas_input_ancho.value;
-	canvas_tam_alto = tam_canvas_input_alto.value;
+	canvas_tam_ancho = Number ( tam_canvas_input_ancho.value );
+	canvas_tam_alto = Number ( tam_canvas_input_alto.value );
 	
-	//Desde cero o conservar el estado, empezaremos desde cero
-	cargarMapa();
+	if ( canvas !== undefined && canvas !== null ) {
+		actualizarCanvasPrincipal();
+
+		if ( camara !== undefined && camara !== null ) {
+			crearCamaras();
+
+			camara.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
+			camara_gui.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
+		}
+	}
 }
 
 /* ************************************************************************************************************ */
@@ -219,10 +245,13 @@ function establecerTamCanvas () {
 document.getElementById("tam_baldosa_boton").addEventListener("click", establecerTamBaldosa);
 function establecerTamBaldosa() {
 	tam_baldosas = Number ( tam_baldosa_input.value );
-	jugador.establecerTamanio ( tam_baldosas * JUGADOR_PARAMS.tamanio_porcentaje_baldosa );
 	
-	//Desde cero o conservar el estado, empezaremos desde cero
-	cargarMapa();
+	if ( canvas !== undefined && canvas !== null && camara !== undefined && camara !== null ) {
+		crearCamaras();
+
+		camara.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
+		camara_gui.establecerModoCamara ( MODOS_CAMARA.seguir_jugador );
+	}
 }
 
 /* ************************************************************************************************************ */
@@ -238,6 +267,10 @@ function cargarMapa() {
 	}
 	
 	procesarMapa ( mapa );
+	
+	if ( jugador !== undefined && jugador !== null ) {
+		crearJugador();
+	}
 }
 
 /* ************************************************************************************************************ */
@@ -264,13 +297,100 @@ async function cargarArchivoMapa() {
 function procesarMapa ( p_mapa ) {
 	//Tenemos que crear una matriz del mismo tamaño de el mapa
 	// pero de objetos baldosas, será nuestro mundo del juego
-	mundo = new Mundo ( p_mapa, tam_baldosas );
+	mundo = new Mundo ( p_mapa );
 	
 	// Posicion de jugador
-	jugador_pos_inicial_x = ( nivel.entidades.jugador.x * tam_baldosas ) + ( tam_baldosas / 2 );
-	jugador_pos_inicial_y = ( nivel.entidades.jugador.y * tam_baldosas ) + ( tam_baldosas / 2 );
+	jugador_pos_inicial_x = nivel.entidades.jugador.x + 0.5;
+	jugador_pos_inicial_y = nivel.entidades.jugador.y + 0.5;
 	jugador_angulo_inicial = nivel.entidades.jugador.angulo;
 	
+}
+
+/* ************************************************************************************************************ */
+
+function actualizarCanvasPrincipal() {
+	canvas.width = Number ( tam_canvas_input_ancho.value );
+	canvas.height = Number ( tam_canvas_input_alto.value );
+
+	canvas_tam_ancho = canvas.width;
+	canvas_tam_alto = canvas.height;
+}
+
+/* ************************************************************************************************************ */
+
+function actualizarCanvasGui() {
+	canvas_gui.width = Number ( TAM_CANVAS_GUI.ancho );
+	canvas_gui.height = Number ( TAM_CANVAS_GUI.alto );
+
+	canvas_gui_tam_ancho = canvas_gui.width;
+	canvas_gui_tam_alto = canvas_gui.height;
+}
+
+/* ************************************************************************************************************ */
+
+function crearCamaras() {
+	const posicion_inicial_camara_x = 0;
+	const posicion_inicial_camara_y = 0;
+
+	/*
+		Camara trabaja en unidades de mundo.
+
+		canvas.width y canvas.height están en píxeles.
+		tam_baldosas indica cuántos píxeles ocupa 1 unidad de mundo en el render principal.
+		TAM_CANVAS_GUI.baldosa indica cuántos píxeles ocupa 1 unidad de mundo en el render GUI.
+
+		Por eso dividimos:
+		- canvas principal / tam_baldosas
+		- canvas GUI / TAM_CANVAS_GUI.baldosa
+	*/
+
+	camara = new Camara (
+		posicion_inicial_camara_x,
+		posicion_inicial_camara_y,
+		canvas.width / tam_baldosas,
+		canvas.height / tam_baldosas
+	);
+
+	camara_gui = new Camara (
+		posicion_inicial_camara_x,
+		posicion_inicial_camara_y,
+		canvas_gui.width / TAM_CANVAS_GUI.baldosa,
+		canvas_gui.height / TAM_CANVAS_GUI.baldosa
+	);
+}
+
+/* ************************************************************************************************************ */
+
+function crearRenders() {
+	render = new Render ( canvas_contexto );
+	render_gui = new Render ( canvas_gui_contexto );
+}
+
+/* ************************************************************************************************************ */
+
+function crearJugador() {
+	jugador_tamanio_inicial = JUGADOR_PARAMS.tamanio_porcentaje_baldosa;
+
+	/*
+		JUGADOR_PARAMS.velocidad ya está expresada en unidades de mundo/seg.
+		Por eso no se divide entre tam_baldosas.
+
+		tam_baldosas solo afecta a cómo se dibuja el mundo en píxeles,
+		no a la velocidad lógica del jugador.
+	*/
+
+	velocidad_jugador = JUGADOR_PARAMS.velocidad;
+	velocidad_angular = JUGADOR_PARAMS.velocidad_angular;
+
+	jugador = new Jugador (
+		mundo,
+		jugador_pos_inicial_x,
+		jugador_pos_inicial_y,
+		jugador_angulo_inicial,
+		jugador_tamanio_inicial,
+		velocidad_jugador,
+		velocidad_angular
+	);
 }
 
 /* ************************************************************************************************************ */

@@ -4,29 +4,90 @@
 		<title>RayCaster</title>
 		<script type="module" src="js/Raycaster.js"></script>
 		<style>
+			* {
+				box-sizing: border-box;
+			}
+
+			html,
+			body {
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+			}
+
 			.zona_cuerpo {
-				margin: 0; 
-				height:100vh; 
-				display:flex; 
-				flex-direction:column;
+				width: 100%;
+				height: 100vh;
+				display: flex;
+				flex-direction: column;
 			}
 			
 			.zona_configuracion {
-				width: 100%; 
-				height: 5%; 
-				display: flex; 
-				flex-direction: row; 
+				width: 100%;
+				flex: 0 0 5%;
+				display: flex;
+				flex-direction: row;
 				gap: 10px;
+				overflow: auto;
+			}
+			
+			.contenedor_canvas {
+				width: 100%;
+				flex: 0 0 95%;
+				display: flex;
+				flex-direction: column;
+				min-height: 0;
 			}
 			
 			.zona_canvas {
-				width: 100%; 
-				height: 95%;
-				margin: 5px;
+				width: 100%;
+				flex: 0 0 85%;
+				display: flex;
+				flex-direction: column;
+				min-height: 0;
+				padding: 1px;
+			}
+			
+			.contenedor_canvas_gui {
+				width: 100%;
+				flex: 0 0 15%;
+				display: flex;
+				flex-direction: row;
+				justify-content: flex-start;
+				align-items: center;
+				min-height: 0;
+				padding: 1px;
+				overflow: hidden;
+			}
+
+			.zona_canvas_gui {
+				height: 100%;
+				width: auto;
+				display: flex;
+				flex-direction: row;
+				justify-content: flex-start;
+				align-items: center;
+				min-width: 0;
+				min-height: 0;
 			}
 			
 			.canvas {
-				border:2px solid #000000;
+				border: 2px solid #000000;
+				display: block;
+			}
+
+			#canvas {
+				width: 100%;
+				height: 100%;
+			}
+
+			#canvas_gui_mapa {
+				width: auto;
+				height: 100%;
+				max-width: 100%;
+				max-height: 100%;
 			}
 			
 			.zona_div {
@@ -36,55 +97,51 @@
 			}
 		</style>
 	</head>
-	<!--
-		height:100vh -> el body ocupa toda la altura de la pantalla.
-		display:flex -> distribucion de los elementos
-		flex-direction:column -> los div se apilan verticalmente en una columna
-	-->
+
 	<body class="zona_cuerpo">
-		<div id="div_configuracion" class="zona_div zona_configuracion" >
-			<!-- Establece el tamaño del canvas -------------------------------------------------------------- -->
+		<div id="div_configuracion" class="zona_div zona_configuracion">
 			<div id="tam_canvas_div" class="zona_div">
 				<label id="tam_canvas_etiqueta" for="tam_canvas_input_ancho">Tama&ntilde;o pantalla:</label>
 				<input id="tam_canvas_input_ancho" type="number" name="tam_canvas_input_ancho" style="width:60px">
 				<label id="tam_canvas_etiqueta_x" for="valor">X</label>
-				<input id="tam_canvas_input_alto" type="number" name="tam_canvas_input_alto"  style="width:60px">
+				<input id="tam_canvas_input_alto" type="number" name="tam_canvas_input_alto" style="width:60px">
 				<button id="tam_canvas_boton">Establecer</button>
 			</div>	
-			<!-- Establece el tamaño de las baldosas --------------------------------------------------------- -->
+
 			<div id="tam_baldosa_div" class="zona_div">
 				<label id="tam_baldosa_etiqueta" for="tam_baldosa_input">Tama&ntilde;o baldosa:</label>
 				<input id="tam_baldosa_input" type="number" name="tam_baldosa_input" style="width:60px">
 				<button id="tam_baldosa_boton">Establecer</button>
 			</div>
-			<!-- Seleccionar mapa ---------------------------------------------------------------------------- -->
+
 			<div id="select_mapa_div" class="zona_div">
 				<label id="select_mapa_etiqueta" for="select_mapa_desplegable">Seleccionar mapa:</label>
 				<select id="select_mapa_desplegable" name="select_mapa_desplegable">
-					<!-- Se carga con Javascript con los mapas disponibles por defecto -->
 				</select>
 				<button id="select_mapa_boton">Cargar Mapa</button>
 			</div>
-			<!-- Cargar mapa desde un archivo ---------------------------------------------------------------- -->
+
 			<div id="cargar_archivo_mapa_div" class="zona_div">
 				<label id="cargar_archivo_mapa_etiqueta" for="cargar_archivo_mapa_input">Seleccionar archivo:</label>
 				<input id="cargar_archivo_mapa_input" type="file" name="cargar_archivo_mapa_input" accept=".json">
 				<button id="cargar_archivo_mapa_boton">Cargar Archivo Mapa</button>
 			</div>
-			<!-- Boton iniciar ------------------------------------------------------------------------------- -->
+
 			<div id="iniciar_div" class="zona_div">
-				<button id="iniciar_boton" >Iniciar</button>
+				<button id="iniciar_boton">Iniciar</button>
 			</div>
-			<!-- --------------------------------------------------------------------------------------------- -->
+		</div>
+
+		<div id="id_contenedor_canvas" class="contenedor_canvas">
+			<div id="div_canvas" class="zona_canvas">
+				<canvas id="canvas" class="canvas"></canvas>
+			</div>
 			
+			<div id="contenedor_canvas_gui" class="contenedor_canvas_gui">
+				<div id="div_canvas_gui_mapa" class="zona_canvas_gui">
+					<canvas id="canvas_gui_mapa" class="canvas"></canvas>
+				</div>
+			</div>
 		</div>
-		<div id="div_canvas" class="zona_canvas">
-			<canvas id="canvas" class="canvas">
-			</canvas>
-		</div>
-		
 	</body>
-	
 </html>
-
-

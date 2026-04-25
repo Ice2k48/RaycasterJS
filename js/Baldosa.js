@@ -5,19 +5,15 @@ import { CASILLAS } from "./Constantes.js";
 /* ************************************************************************************************************ */
 
 export default class Baldosa {
-	#pos_x0;
-	#pos_x1;
-	#pos_y0;
-	#pos_y1;
+	#x;
+	#y;
 	#tipo;
 	
 	/* ******************************************************************************************************** */
 	
-	constructor ( p_pos_x0, p_pos_x1, p_pos_y0, p_pos_y1, p_tipo ) {
-		this.#pos_x0 = p_pos_x0;
-		this.#pos_x1 = p_pos_x1;
-		this.#pos_y0 = p_pos_y0;
-		this.#pos_y1 = p_pos_y1;
+	constructor ( p_pos_x, p_pos_y, p_tipo ) {
+		this.#x = p_pos_x;
+		this.#y = p_pos_y;
 		this.#tipo = p_tipo;
 	}
 	
@@ -38,7 +34,7 @@ export default class Baldosa {
 	estoyDentro ( p_pos_x, p_pos_y ) {
 		let dentro = false;
 		
-		if ( this.#pos_x0 <= p_pos_x && this.#pos_x1 >= p_pos_x && this.#pos_y0 <= p_pos_y && this.#pos_y1 >= p_pos_y  ) {
+		if ( this.#x <= p_pos_x && ( this.#x + 1 ) > p_pos_x && this.#y <= p_pos_y && ( this.#y + 1 ) > p_pos_y  ) {
 			dentro = true;
 		}
 		
@@ -55,11 +51,11 @@ export default class Baldosa {
 			alto: null
 		};
 	
-		rectangulo.x = this.#pos_x0;
-		rectangulo.y = this.#pos_y0;
+		rectangulo.x = this.#x;
+		rectangulo.y = this.#y;
 	
-		rectangulo.ancho = this.#pos_x1 - this.#pos_x0;
-		rectangulo.alto  = this.#pos_y1 - this.#pos_y0;
+		rectangulo.ancho = 1;
+		rectangulo.alto  = 1;
 	
 		return rectangulo;
 	}
